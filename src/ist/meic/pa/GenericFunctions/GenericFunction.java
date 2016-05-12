@@ -6,7 +6,7 @@ import java.util.TreeMap;
 import java.lang.reflect.*;
 
 public class GenericFunction {
-	private boolean logger = true;
+	private boolean logger = false;
 	private String name;
 	private final TreeMap<String, GFMethod> primary;
 	private final TreeMap<String, GFMethod> before;
@@ -28,8 +28,20 @@ public class GenericFunction {
 		return s;
 	}
 
-	private String[] KeyToClasses(String key) {
-		return key.split(",");
+	private Class<?>[] KeyToClasses(String key) {
+		String[] keys = key.split(",");
+		Class<?>[] c = new Class<?>[keys.length];
+		int i = 0;
+
+		for (String className : keys) {
+			try {
+				c[i] = Class.forName(className);
+			} catch (ClassNotFoundException e) {
+				return null;
+			}
+			i++;
+		}
+		return c;
 	}
 
 	private Method getCallMethod(GFMethod gf) {
@@ -37,83 +49,147 @@ public class GenericFunction {
 		return gfClass.getDeclaredMethods()[0];
 	}
 
+	private Class<?>[][] getAllAvailableMethods(TreeMap<String, GFMethod> allMethods, int length) {
+		Set<String> availableKeys = allMethods.keySet();
+		Class<?>[][] available = new Class<?>[availableKeys.size()][length];
+		int i = 0;
+		for (String key : availableKeys) {
+			Class<?>[] c = KeyToClasses(key);
+			if (c == null) {
+				continue;
+			} else {
+				available[i] = c;
+				i++;
+			}
+		}
+		return available;
+	}
+
+	private void printMethod(Class<?>[] args) {
+		System.out.println(" method with args: " + ClassesToKey(args));
+	}
+
 	public void addMethod(GFMethod gf) {
 		Class<?>[] c = getCallMethod(gf).getParameterTypes();
 		primary.put(ClassesToKey(c), gf);
-
-		if (logger) {
-			System.out
-					.println("Inserted primary method on generic function " + name + " with args: " + ClassesToKey(c));
-		}
 	}
 
 	public void addAfterMethod(GFMethod gf) {
 		Class<?>[] c = getCallMethod(gf).getParameterTypes();
 		after.put(ClassesToKey(c), gf);
-
-		if (logger) {
-			System.out.println("Inserted after method on generic function " + name + " with args: " + ClassesToKey(c));
-		}
 	}
 
 	public void addBeforeMethod(GFMethod gf) {
 		Class<?>[] c = getCallMethod(gf).getParameterTypes();
 		before.put(ClassesToKey(c), gf);
-
-		if (logger) {
-			System.out.println("Inserted before method on generic function " + name + " with args: " + ClassesToKey(c));
-		}
 	}
 
-	private GFMethod getApplicableMethod(Class<?>[] args, TreeMap<String, GFMethod> allMethods)
-			throws IllegalArgumentException {
-		GFMethod applicable = null;
-		applicable = allMethods.get(ClassesToKey(args));
-		if (applicable != null) {
-			return applicable;
+	private ArrayList<Class<?>[]> getApplicableMethods(Class<?>[] args, TreeMap<String, GFMethod> allMethods) {
+
+		Class<?>[][] available = null;
+		ArrayList<Class<?>[]> applicable = null;
+		available = getAllAvailableMethods(allMethods, args.length);
+		applicable = new ArrayList<Class<?>[]>();
+		boolean app = true;
+		for (Class<?>[] a : available) {
+			app = true;
+			for (int i = 0; i < args.length; i++) {
+				if (!a[i].isAssignableFrom(args[i])) {
+					app = false;
+					break;
+				}
+			}
+			if (app) {
+				applicable.add(a);
+			}
 		}
-		if (logger) {
-			System.out.println("Didn't found key");
-			System.out.println("Actual: " + ClassesToKey(args));
+
+		if (!applicable.isEmpty() && logger) {
+			System.out.println("Found " + applicable.size() + " candidate methods:");
+			for (Class<?>[] a : applicable) {
+				printMethod(a);
+			}
 		}
-		Class<?>[][] gfs = getAvailableMethods(args, allMethods);
+
 		return applicable;
 	}
 
-	private Class<?>[][] getAvailableMethods(Class<?>[] args, TreeMap<String, GFMethod> allMethods) {
-		Set<String> availableKeys = allMethods.keySet();
-		Class<?>[][] available = new Class<?>[availableKeys.size()][args.length];
-		Class<?>[][] applicable = new Class<?>[availableKeys.size()][args.length];
+	private Object computeActualMethod(ArrayList<Class<?>[]> bMethods, ArrayList<Class<?>[]> pMethods,
+			ArrayList<Class<?>[]> aMethods, Object[] args) {
+		GFMethod gM;
+		Method m;
+		Object ret = null;
 
-		for (Class<?>[] key : available) {
-			
+		// Before Methods
+		if (!bMethods.isEmpty()) {
+			for (Class<?>[] bM : bMethods) {
+				gM = before.get(ClassesToKey(bM));
+				m = getCallMethod(gM);
+				m.setAccessible(true);
+				try {
+					m.invoke(gM, args);
+					if (logger) {
+						System.out.print("Calling before method: ");
+						printMethod(bM);
+					}
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					e.printStackTrace();
+					return -1;
+				}
+			}
 		}
 
-//		throw new IllegalArgumentException(
-//				"No methods for generic function " + name + " with arguments " + ClassesToKey(args));
+		// Call Primary Method
+		if (!pMethods.isEmpty()) {
+			gM = primary.get(ClassesToKey(pMethods.get(0)));
+			m = getCallMethod(gM);
+			m.setAccessible(true);
+			try {
+				ret = m.invoke(gM, args);
+				if (logger) {
+					System.out.print("Calling after method: ");
+					printMethod(pMethods.get(0));
+				}
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				e.printStackTrace();
+			}
+		}else{
+			throw new IllegalArgumentException("No methods for generic function " + this.name);
+		}
 
+		// After Methods
+		if (!aMethods.isEmpty()) {
+			for (Class<?>[] aM : aMethods) {
+				gM = after.get(ClassesToKey(aM));
+				m = getCallMethod(gM);
+				m.setAccessible(true);
+				try {
+					m.invoke(gM, args);
+					if (logger) {
+						System.out.print("Calling after method: ");
+						printMethod(aM);
+					}
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		return ret;
 	}
 
-	public Object call(Object... args) throws IllegalArgumentException {
+	public Object call(Object... args){
 		Class<?>[] k = new Class<?>[args.length];
 		int i = 0;
 		for (Object a : args) {
 			k[i] = a.getClass();
 			i++;
 		}
-		if (logger) {
-			System.out.println("Call on generic function " + name + " with args: " + ClassesToKey(k));
-		}
+		
+		ArrayList<Class<?>[]> primaryMethods = getApplicableMethods(k, primary);
+		ArrayList<Class<?>[]> beforeMethods = getApplicableMethods(k, before);
+		ArrayList<Class<?>[]> afterMethods = getApplicableMethods(k, after);
 
-		GFMethod gf = getApplicableMethod(k, primary);
-		Class<?> gfClass = gf.getClass();
-		Method m = gfClass.getDeclaredMethods()[0];
-		try {
-			m.setAccessible(true);
-			return m.invoke(gf, args);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			e.printStackTrace();
-		}
-		return name;
+		return computeActualMethod(beforeMethods, primaryMethods, afterMethods, args);
 	}
 }

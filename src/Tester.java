@@ -12,7 +12,7 @@ public class Tester {
 			}
 		});
 		
-		System.out.println(gf.call(3.0, 2.0));
+		System.out.println(gf.call(3, 2));
 	}
 
 }
