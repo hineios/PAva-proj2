@@ -1,6 +1,7 @@
 package ist.meic.pa.GenericFunctions;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.TreeMap;
 import java.lang.reflect.*;
 
@@ -25,6 +26,10 @@ public class GenericFunction {
 			s = s.concat(a.getName() + ",");
 		}
 		return s;
+	}
+
+	private String[] KeyToClasses(String key) {
+		return key.split(",");
 	}
 
 	private Method getCallMethod(GFMethod gf) {
@@ -60,26 +65,34 @@ public class GenericFunction {
 		}
 	}
 
-	/*private GFMethod getApplicableMethod(Class<?>[] args) {
+	private GFMethod getApplicableMethod(Class<?>[] args, TreeMap<String, GFMethod> allMethods)
+			throws IllegalArgumentException {
 		GFMethod applicable = null;
-		applicable = primary.get(ClassesToKey(args));
-		
-		if(applicable != null){
+		applicable = allMethods.get(ClassesToKey(args));
+		if (applicable != null) {
 			return applicable;
 		}
-		
-		Class<?>[] argsCopy = new Class<?>[args.length]; 
-		System.arraycopy(args, 0, argsCopy, 0, args.length);
-		
-		for (Class<?> c : argsCopy) {
-			applicable = primary.get
+		if (logger) {
+			System.out.println("Didn't found key");
+			System.out.println("Actual: " + ClassesToKey(args));
 		}
-		if (applicable == null) {
-			throw new IllegalArgumentException(
-					"No methods for generic function " + name + " with arguments " + ClassesToKey(args));
-		}
+		Class<?>[][] gfs = getAvailableMethods(args, allMethods);
 		return applicable;
-	}*/
+	}
+
+	private Class<?>[][] getAvailableMethods(Class<?>[] args, TreeMap<String, GFMethod> allMethods) {
+		Set<String> availableKeys = allMethods.keySet();
+		Class<?>[][] available = new Class<?>[availableKeys.size()][args.length];
+		Class<?>[][] applicable = new Class<?>[availableKeys.size()][args.length];
+
+		for (Class<?>[] key : available) {
+			
+		}
+
+//		throw new IllegalArgumentException(
+//				"No methods for generic function " + name + " with arguments " + ClassesToKey(args));
+
+	}
 
 	public Object call(Object... args) throws IllegalArgumentException {
 		Class<?>[] k = new Class<?>[args.length];
@@ -92,11 +105,7 @@ public class GenericFunction {
 			System.out.println("Call on generic function " + name + " with args: " + ClassesToKey(k));
 		}
 
-		GFMethod gf = primary.get(ClassesToKey(k));
-		if (gf == null) {
-			throw new IllegalArgumentException(
-					"No methods for generic function " + name + " with arguments " + ClassesToKey(k));
-		}
+		GFMethod gf = getApplicableMethod(k, primary);
 		Class<?> gfClass = gf.getClass();
 		Method m = gfClass.getDeclaredMethods()[0];
 		try {
@@ -105,7 +114,6 @@ public class GenericFunction {
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			e.printStackTrace();
 		}
-
 		return name;
 	}
 }
