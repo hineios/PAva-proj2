@@ -8,11 +8,13 @@ public class TestA {
 		final GenericFunction add = new GenericFunction("add");
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Integer a, Integer b) {
 				return a + b;
 			}});
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Object[] a, Object[] b) {
 				Object[] r = new Object[a.length];
 				for (int i = 0; i < a.length; i++) {
@@ -22,6 +24,7 @@ public class TestA {
 			}});
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Object[] a, Object b) {
 				Object[] ba = new Object[a.length];
 				Arrays.fill(ba, b);
@@ -29,6 +32,7 @@ public class TestA {
 			}});
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Object a, Object b[]) {
 				Object[] aa = new Object[b.length];
 				Arrays.fill(aa, a);
@@ -36,17 +40,20 @@ public class TestA {
 			}});
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(String a, Object b) {
 				return add.call(Integer.decode(a), b);
 			}});
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Object a, String b) {
 				return add.call(a, Integer.decode(b));
 			}});
 
 		add.addMethod(new GFMethod() {
-			Object call(Object[] a, List b) {
+			@SuppressWarnings("unused")
+			Object call(Object[] a, @SuppressWarnings("rawtypes") List b) {
 				return add.call(a, b.toArray());
 			}});
 

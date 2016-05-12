@@ -8,29 +8,34 @@ public class TestB {
 		final GenericFunction explain = new GenericFunction("explain");
 
 		explain.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Integer entity) {
 				System.err.printf("%s is a integer", entity);
 				return "";
 			}});
 
 		explain.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Number entity) {
 				System.err.printf("%s is a number", entity);
 				return "";
 			}});
 
 		explain.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(String entity) {
 				System.err.printf("%s is a string", entity);
 				return "";
 			}});
 
 		explain.addAfterMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			void call(Integer entity) {
 				System.err.printf(" (in hexadecimal, is %x)", entity);
 			}});
 
 		explain.addBeforeMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			void call(Number entity) {
 				System.err.printf("The number ", entity);
 			}});

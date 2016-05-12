@@ -8,11 +8,13 @@ public class TestD {
 		final GenericFunction add = new GenericFunction("add");
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Integer a, Integer b) {
 				return a + b;
 			}});
 
 		add.addMethod(new GFMethod() {
+			@SuppressWarnings("unused")
 			Object call(Object[] a, Object[] b) {
 				Object[] r = new Object[a.length];
 				for (int i = 0; i < a.length; i++) {
