@@ -1,6 +1,7 @@
 package ist.meic.pa.GenericFunctions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeMap;
@@ -141,8 +142,31 @@ public class GenericFunction {
 		return methods;
 	}
 
+	private static String print(Object obj) {
+
+		if (obj instanceof Object[]) {
+			return Arrays.deepToString((Object[]) obj);
+		} else {
+			return obj.toString();
+		}
+	}
+
+	private String printSignature(Class<?>[] classes) {
+		String ret = "[class ";
+		int i = 1;
+		for (Class<?> c : classes) {
+			ret = ret + c.getName();
+			if (i++ == classes.length) {
+				ret = ret + "]";
+			}else{
+				ret = ret + ", class ";
+			}
+		}
+		return ret;
+	}
+
 	private Object computeActualMethod(ArrayList<Class<?>[]> bMethods, ArrayList<Class<?>[]> pMethods,
-			ArrayList<Class<?>[]> aMethods, Object[] args) {
+			ArrayList<Class<?>[]> aMethods, Object[] args, Class<?>[] k) {
 		GFMethod gM;
 		Method m;
 		Object ret = null;
@@ -173,7 +197,9 @@ public class GenericFunction {
 				e.printStackTrace();
 			}
 		} else {
-			throw new IllegalArgumentException("No methods for generic function " + this.name);
+			String error = "No methods for generic function " + this.name + "with args " + print(args);
+			error = error + " of classes " + printSignature(k);
+			throw new IllegalArgumentException(error);
 		}
 
 		// After Methods
@@ -209,6 +235,6 @@ public class GenericFunction {
 		beforeMethods = orderMethodsSpecificFirst(beforeMethods);
 		afterMethods = orderMethodsSpecificLast(afterMethods);
 
-		return computeActualMethod(beforeMethods, primaryMethods, afterMethods, args);
+		return computeActualMethod(beforeMethods, primaryMethods, afterMethods, args, k);
 	}
 }
