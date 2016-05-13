@@ -1,6 +1,7 @@
 package ist.meic.pa.GenericFunctions;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeMap;
 import java.lang.reflect.*;
@@ -114,6 +115,50 @@ public class GenericFunction {
 		return applicable;
 	}
 
+	private ArrayList<Class<?>[]> orderMethodsSpecificFirst(ArrayList<Class<?>[]> methods) {
+		methods.sort(new Comparator<Class<?>[]>() {
+
+			@Override
+			public int compare(Class<?>[] arg0, Class<?>[] arg1) {
+				int state = 0;
+				for (int i = 0; i < arg0.length; i++) {
+					if (arg0[i].equals(arg1[i])) {
+						continue;
+					} else if (arg0[i].isAssignableFrom(arg1[i])) {
+						return 1;
+					}else{
+						return -1;
+					}
+				}
+				return state;
+			}
+
+		});
+		return methods;
+	}
+
+	private ArrayList<Class<?>[]> orderMethodsSpecificLast(ArrayList<Class<?>[]> methods) {
+		methods.sort(new Comparator<Class<?>[]>() {
+
+			@Override
+			public int compare(Class<?>[] arg0, Class<?>[] arg1) {
+				int state = 0;
+				for (int i = 0; i < arg0.length; i++) {
+					if (arg0[i].equals(arg1[i])) {
+						continue;
+					} else if (arg0[i].isAssignableFrom(arg1[i])) {
+						return -1;
+					}else{
+						return 1;
+					}
+				}
+				return state;
+			}
+
+		});
+		return methods;
+	}
+
 	private Object computeActualMethod(ArrayList<Class<?>[]> bMethods, ArrayList<Class<?>[]> pMethods,
 			ArrayList<Class<?>[]> aMethods, Object[] args) {
 		GFMethod gM;
@@ -147,13 +192,13 @@ public class GenericFunction {
 			try {
 				ret = m.invoke(gM, args);
 				if (logger) {
-					System.out.print("Calling after method: ");
+					System.out.print("Calling primary method: ");
 					printMethod(pMethods.get(0));
 				}
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 				e.printStackTrace();
 			}
-		}else{
+		} else {
 			throw new IllegalArgumentException("No methods for generic function " + this.name);
 		}
 
@@ -178,17 +223,21 @@ public class GenericFunction {
 		return ret;
 	}
 
-	public Object call(Object... args){
+	public Object call(Object... args) {
 		Class<?>[] k = new Class<?>[args.length];
 		int i = 0;
 		for (Object a : args) {
 			k[i] = a.getClass();
 			i++;
 		}
-		
+
 		ArrayList<Class<?>[]> primaryMethods = getApplicableMethods(k, primary);
 		ArrayList<Class<?>[]> beforeMethods = getApplicableMethods(k, before);
 		ArrayList<Class<?>[]> afterMethods = getApplicableMethods(k, after);
+		
+		primaryMethods = orderMethodsSpecificFirst(primaryMethods);
+		beforeMethods = orderMethodsSpecificFirst(beforeMethods);
+		afterMethods = orderMethodsSpecificLast(afterMethods);
 
 		return computeActualMethod(beforeMethods, primaryMethods, afterMethods, args);
 	}
