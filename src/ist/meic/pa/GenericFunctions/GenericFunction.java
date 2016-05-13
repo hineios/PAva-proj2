@@ -7,7 +7,6 @@ import java.util.TreeMap;
 import java.lang.reflect.*;
 
 public class GenericFunction {
-	private boolean logger = false;
 	private String name;
 	private final TreeMap<String, GFMethod> primary;
 	private final TreeMap<String, GFMethod> before;
@@ -66,10 +65,6 @@ public class GenericFunction {
 		return available;
 	}
 
-	private void printMethod(Class<?>[] args) {
-		System.out.println(" method with args: " + ClassesToKey(args));
-	}
-
 	public void addMethod(GFMethod gf) {
 		Class<?>[] c = getCallMethod(gf).getParameterTypes();
 		primary.put(ClassesToKey(c), gf);
@@ -86,7 +81,6 @@ public class GenericFunction {
 	}
 
 	private ArrayList<Class<?>[]> getApplicableMethods(Class<?>[] args, TreeMap<String, GFMethod> allMethods) {
-
 		Class<?>[][] available = null;
 		ArrayList<Class<?>[]> applicable = null;
 		available = getAllAvailableMethods(allMethods, args.length);
@@ -104,20 +98,11 @@ public class GenericFunction {
 				applicable.add(a);
 			}
 		}
-
-		if (!applicable.isEmpty() && logger) {
-			System.out.println("Found " + applicable.size() + " candidate methods:");
-			for (Class<?>[] a : applicable) {
-				printMethod(a);
-			}
-		}
-
 		return applicable;
 	}
 
 	private ArrayList<Class<?>[]> orderMethodsSpecificFirst(ArrayList<Class<?>[]> methods) {
 		methods.sort(new Comparator<Class<?>[]>() {
-
 			@Override
 			public int compare(Class<?>[] arg0, Class<?>[] arg1) {
 				int state = 0;
@@ -126,20 +111,18 @@ public class GenericFunction {
 						continue;
 					} else if (arg0[i].isAssignableFrom(arg1[i])) {
 						return 1;
-					}else{
+					} else {
 						return -1;
 					}
 				}
 				return state;
 			}
-
 		});
 		return methods;
 	}
 
 	private ArrayList<Class<?>[]> orderMethodsSpecificLast(ArrayList<Class<?>[]> methods) {
 		methods.sort(new Comparator<Class<?>[]>() {
-
 			@Override
 			public int compare(Class<?>[] arg0, Class<?>[] arg1) {
 				int state = 0;
@@ -148,13 +131,12 @@ public class GenericFunction {
 						continue;
 					} else if (arg0[i].isAssignableFrom(arg1[i])) {
 						return -1;
-					}else{
+					} else {
 						return 1;
 					}
 				}
 				return state;
 			}
-
 		});
 		return methods;
 	}
@@ -173,10 +155,6 @@ public class GenericFunction {
 				m.setAccessible(true);
 				try {
 					m.invoke(gM, args);
-					if (logger) {
-						System.out.print("Calling before method: ");
-						printMethod(bM);
-					}
 				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 					e.printStackTrace();
 					return -1;
@@ -191,10 +169,6 @@ public class GenericFunction {
 			m.setAccessible(true);
 			try {
 				ret = m.invoke(gM, args);
-				if (logger) {
-					System.out.print("Calling primary method: ");
-					printMethod(pMethods.get(0));
-				}
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 				e.printStackTrace();
 			}
@@ -210,10 +184,6 @@ public class GenericFunction {
 				m.setAccessible(true);
 				try {
 					m.invoke(gM, args);
-					if (logger) {
-						System.out.print("Calling after method: ");
-						printMethod(aM);
-					}
 				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 					e.printStackTrace();
 				}
@@ -234,7 +204,7 @@ public class GenericFunction {
 		ArrayList<Class<?>[]> primaryMethods = getApplicableMethods(k, primary);
 		ArrayList<Class<?>[]> beforeMethods = getApplicableMethods(k, before);
 		ArrayList<Class<?>[]> afterMethods = getApplicableMethods(k, after);
-		
+
 		primaryMethods = orderMethodsSpecificFirst(primaryMethods);
 		beforeMethods = orderMethodsSpecificFirst(beforeMethods);
 		afterMethods = orderMethodsSpecificLast(afterMethods);
